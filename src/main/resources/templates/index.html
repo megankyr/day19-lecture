@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Homepage</title>
+  </head>
+  <body>
+    <form method="GET" data-th-action="@{/news}">
+      <table>
+        <tr>
+          <td>Category</td>
+          <td>
+            <select name="category">
+              <option
+                data-th-each="category : ${categories}"
+                data-th-value="${category}"
+                data-th-text="${#strings.capitalize(category)}"
+              ></option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td>Country</td>
+          <td>
+            <select name="country">
+              <option
+                data-th-each="code : ${codes}"
+                data-th-value="${code.code}" data-th-text="${code.name}">
+              ></option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>
+            <button type="submit">Search</button>
+          </td>
+        </tr>
+      </table>
+    </form>
+  </body>
+</html>

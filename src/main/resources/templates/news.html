@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div data-th-if="${#lists.isEmpty(news)}">
+      <p>
+        No news found for <span data-th-text="${country}"></span> in
+        <span data-th-text="${category}"></span>
+      </p>
+    </div>
+    <div data-th-unless="${#lists.isEmpty(news)}">
+      <article data-th-each="n : ${news}">
+        <h3 data-th-text="${n.title}"></h3>
+        <div>
+          <img data-th-src="${n.image}" width="250px" />
+        </div>
+        <div>Author: <span data-th-text="${n.author}"></span></div>
+        <div>
+          <p data-th-text="${n.description}"></p>
+        </div>
+        <div>Publish date: <span data-th-text="${n.publish}"></span></div>
+        <div>
+          Read article <a data-th-href="${n.url}" target="_blank">here</a>
+        </div>
+      </article>
+    </div>
+  </body>
+</html>
