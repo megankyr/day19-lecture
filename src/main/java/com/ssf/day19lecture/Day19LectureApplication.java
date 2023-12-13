@@ -8,6 +8,9 @@ public class Day19LectureApplication {
 
 	public static void main(String[] args) {
 		SpringApplication.run(Day19LectureApplication.class, args);
+
+		String newsApiKey = System.getenv("NEWSAPI_KEY");
+        System.out.println("NEWSAPI_KEY: " + newsApiKey);
 	}
 
 }
