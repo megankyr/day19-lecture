@@ -6,8 +6,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -17,6 +21,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.ssf.day19lecture.Utils;
 import com.ssf.day19lecture.model.CountryCode;
 import com.ssf.day19lecture.model.News;
+import com.ssf.day19lecture.repo.NewsRepo;
 
 import jakarta.json.Json;
 import jakarta.json.JsonArray;
@@ -30,34 +35,58 @@ public class NewsService {
     @Value("${newsapi.key}")
     private String apiKey;
 
+    @Autowired
+    private NewsRepo newsRepo;
+
+    @Autowired
+    @Qualifier("newsCache")
+    private RedisTemplate<String, String> template;
+
     private List<CountryCode> codes = null;
 
     public List<News> getNews(String country, String category) {
-        String url = UriComponentsBuilder
-                .fromUriString("https://newsapi.org/v2/top-headlines")
-                .queryParam("country", country)
-                .queryParam("category", category)
-                .toUriString();
 
-        RequestEntity<Void> req = RequestEntity.get(url)
-                .header("X-Api-Key", apiKey)
-                .build();
+        Optional<String> opt = newsRepo.getNews(country, category);
 
-        RestTemplate template = new RestTemplate();
-        ResponseEntity<String> resp;
+        if (opt.isPresent()) {
+            System.out.println("From cache:");
+            String payload = opt.get();
+            JsonReader reader = Json.createReader(new StringReader(payload));
+            JsonArray articles = reader.readArray();
+
+            return processArticles(articles);
+        }
 
         try {
-            resp = template.exchange(req, String.class);
+            String url = UriComponentsBuilder
+                    .fromUriString("https://newsapi.org/v2/top-headlines")
+                    .queryParam("country", country)
+                    .queryParam("category", category)
+                    .toUriString();
+
+            RequestEntity<Void> req = RequestEntity.get(url)
+                    .header("X-Api-Key", apiKey)
+                    .build();
+
+            RestTemplate template = new RestTemplate();
+            ResponseEntity<String> resp = template.exchange(req, String.class);
+
+            String payload = resp.getBody();
+            JsonReader reader = Json.createReader(new StringReader(payload));
+            JsonObject result = reader.readObject();
+            JsonArray articles = result.getJsonArray("articles");
+
+            newsRepo.cacheNews(country, category, articles);
+
+            return processArticles(articles);
+
         } catch (Exception e) {
             e.printStackTrace();
             return new LinkedList<>();
         }
+    }
 
-        String payload = resp.getBody();
-        JsonReader reader = Json.createReader(new StringReader(payload));
-        JsonObject result = reader.readObject();
-        JsonArray articles = result.getJsonArray("articles");
-
+    private List<News> processArticles(JsonArray articles) {
         List<News> newsList = new ArrayList<>();
 
         for (JsonValue articleValue : articles) {
